@@ -1,0 +1,78 @@
+Architecture plan for `mtplayground/process-bar-2`
+
+Goal
+Build a self-hosted blog/CMS on Next.js App Router with a protected admin area, PostgreSQL via Prisma, Credentials-based auth for a single admin flow, and public post rendering with SEO/feed support.
+
+Module structure
+- `app/`
+  - `(public)/page.tsx` for the paginated home page
+  - `(public)/posts/[slug]/page.tsx` for post detail
+  - `admin/sign-in/page.tsx` for auth entry
+  - `admin/posts/page.tsx` for dashboard
+  - `admin/posts/new/page.tsx` for create flow
+  - `admin/posts/[id]/edit/page.tsx` for edit flow
+  - `layout.tsx`, `loading.tsx`, `error.tsx`, `not-found.tsx`
+  - `sitemap.ts`, `robots.ts`, optional `rss.xml/route.ts`
+- `components/`
+  - `site/` header, footer, pagination, post cards
+  - `admin/` dashboard table, post form, markdown editor, preview
+  - `ui/` buttons, inputs, alerts, empty/error states
+- `lib/`
+  - `env.ts` for validated environment access
+  - `db.ts` Prisma client singleton
+  - `auth.ts` NextAuth config/helpers
+  - `markdown.ts` render and excerpt helpers
+  - `posts.ts` read-side post queries
+  - `metadata.ts` shared SEO/Open Graph builders
+  - `utils.ts` generic utilities
+- `actions/`
+  - `posts.ts` server actions for create/update/delete/publish
+- `prisma/`
+  - `schema.prisma`, `migrations/`, `seed.ts`
+- `types/`
+  - `post.ts` and `auth.ts` for app-level view models when Prisma types should not leak into UI
+- `middleware.ts`
+- root config
+  - `next.config.*`, `tailwind.config.*`, `postcss.config.*`, `tsconfig.json`
+  - `Dockerfile`, `docker-compose.yml`, `.env.example`
+
+Shared types and data shape
+- Prisma `User` model: `id`, `email`, `passwordHash`, `role`, `createdAt`, `updatedAt`
+- Prisma `Post` model: `id`, `title`, `slug`, `excerpt`, `content`, `published`, `publishedAt`, `createdAt`, `updatedAt`, `authorId`
+- App view types
+  - `PostListItem` for home/admin tables
+  - `PostDetail` for full render page
+  - `PostFormInput` for create/edit validation
+- Keep database entities in Prisma and expose UI-safe shapes from `lib/posts.ts` and server actions instead of importing raw Prisma types into many components.
+
+Issue dependency order
+- Foundation: #1 Next.js -> #2 Tailwind -> #3 env -> #4 Docker
+- Data layer: #5 Prisma -> #6 models/migration -> #7 seed
+- Auth layer: #8 NextAuth -> #9 sign-in -> #10 middleware
+- Admin core: #11 post server actions -> #12 dashboard -> #13 markdown editor -> #14 create page -> #15 edit page
+- Public site: #16 layout -> #17 home page -> #18 post detail -> #19 metadata -> #20 sitemap/robots -> #21 RSS
+- Polish: #22 loading/error UI -> #23 validation/errors -> #24 README/deploy notes
+
+Cross-cutting dependencies
+- #3 env should define all keys needed by #4, #5, #8, #24 early to avoid churn.
+- #6 should include `slug` and publish fields so #11, #17, #18, #19, #21 do not need schema changes later.
+- #8 should settle session strategy and route helpers before #10, #11, #12, #14, #15.
+- #13 should produce a reusable `PostForm` used by both #14 and #15 to avoid divergent editor behavior.
+- #23 validation should wrap #11 actions and feed errors into #9, #14, and #15 rather than being handled separately in each page.
+
+Key design decisions
+- Use App Router server components for read-heavy pages and server actions for admin mutations. This keeps the stack simple and avoids adding a separate API layer for CRUD.
+- Use Credentials auth with hashed passwords and a seeded admin user. Keep scope intentionally narrow; no public sign-up.
+- Prefer `slug` as the public identifier and numeric/string `id` for admin editing routes.
+- Store Markdown source in the database and render to HTML on the server for public pages; keep preview rendering client-side in the editor.
+- Implement env validation once in `lib/env.ts` using a small schema validator so bad configuration fails fast in development and deployment.
+- Centralize Prisma and NextAuth configuration to avoid duplicate initialization in server actions, route handlers, and middleware-adjacent helpers.
+- Generate metadata, sitemap, and RSS from the same published-post query helpers so SEO outputs cannot drift from the rendered site.
+- Aim for single-admin, low-complexity deployment assumptions in Docker Compose: Next.js app + PostgreSQL service, with documented env vars and migration/seed steps.
+
+Risks to manage in later issues
+- NextAuth version choice must match App Router patterns used by the selected Next.js version.
+- Middleware should protect only `/admin` content pages and avoid redirect loops on `/admin/sign-in`.
+- Markdown rendering must be sanitized if raw HTML is allowed; decide that policy before #18.
+- Pagination, RSS, sitemap, and metadata should only include published posts.
+- Docker and local development should share the same env contract to avoid split-brain configuration.
