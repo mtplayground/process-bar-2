@@ -3,5 +3,6 @@ FROM nginx:1.27-alpine
 
 COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
 COPY docker/index.html /usr/share/nginx/html/index.html
+COPY docker/about /usr/share/nginx/html/about
 
 EXPOSE 8080
