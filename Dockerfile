@@ -1,9 +1,16 @@
-# Self-check: cargo build --release is not applicable because no Cargo project exists on host; packaging the current main branch as a static site served by nginx on 8080.
-FROM nginx:1.27-alpine
+FROM node:22-alpine
 
-COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
-COPY docker/index.html /usr/share/nginx/html/index.html
-COPY docker/about /usr/share/nginx/html/about
-COPY docker/styles.css /usr/share/nginx/html/styles.css
+WORKDIR /app
+
+COPY package.json package-lock.json* ./
+RUN npm ci
+
+COPY . .
+
+ENV PORT=8080
+
+RUN npm run build
 
 EXPOSE 8080
+
+CMD ["npm", "run", "start"]
