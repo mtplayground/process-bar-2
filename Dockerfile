@@ -1,5 +1,3 @@
-# Host build check: `cargo build --release` is not applicable because this repository is a Next.js/Node app.
-# Verification: `npm run build` succeeded on the host and `.next/standalone/server.js` served `HTTP/1.1 200 OK` on port 8080.
 FROM node:22-bookworm-slim AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
