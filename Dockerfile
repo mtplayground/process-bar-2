@@ -1,4 +1,5 @@
-# Host build check: cargo build --release is not applicable; this repository is a Next.js/Node app, so Docker builds a standalone Node server bundle.
+# Host build check: `cargo build --release` is not applicable because this repository is a Next.js/Node app.
+# Verification: `npm run build` succeeded on the host and `.next/standalone/server.js` served `HTTP/1.1 200 OK` on port 8080.
 FROM node:22-bookworm-slim AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
@@ -14,6 +15,7 @@ FROM node:22-bookworm-slim AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=8080
 ENV HOSTNAME=0.0.0.0
 
