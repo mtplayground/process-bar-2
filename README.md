@@ -16,3 +16,12 @@ Baseline Next.js application for the Process Bar 2 roadmap.
 - `npm run start`
 - `npm run lint`
 - `npm run format`
+
+## Environment
+
+Copy `.env.example` to `.env.local` for local development.
+
+The env contract is grouped around:
+- database connection and local Postgres container settings
+- auth base URL and secret material
+- seeded admin credentials for the initial sign-in flow
