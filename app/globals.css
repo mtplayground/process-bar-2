@@ -27,6 +27,14 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
+  body > div[hidden] {
+    display: flex !important;
+    padding-top: 1px;
+    inline-size: 0;
+    block-size: 0;
+    overflow: hidden;
+  }
+
   a {
     color: inherit;
     text-decoration: none;
